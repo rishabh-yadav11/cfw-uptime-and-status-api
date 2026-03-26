@@ -1,89 +1,42 @@
-# Uptime and Status API
+# Serverless Uptime Monitor
 
-## Product Summary
-Run scheduled health checks, track latency, save incidents, and expose a public status JSON feed.
+> **Monitoring** | High-performance API powered by Cloudflare Workers.
 
-## Route List
-- POST /v1/checks
-- GET /v1/checks/:id
-- GET /v1/checks/:id/history
-- GET /v1/status/:project_slug
-- POST /v1/incidents
-- scopes: uptime:read, uptime:write
-- write_routes: HMAC signing plus Idempotency-Key
-- target_rules: public https targets only
-- check_limits: interval floor 60s, timeout 5s
-- create_check: POST /v1/checks creates monitor and returns id
-- signed_write: bad signature returns 401
-- status_feed: GET /v1/status/demo returns current state and incident summary
+## Description
+Programmatic health checks and latency monitoring. Build your own status page or monitoring engine.
 
-## Auth Model
-- **Type**: API Key (Bearer Token)
-- **Header**: `Authorization: Bearer <api_key>`
-- **Storage**: Hashed storage in Cloudflare KV
-- **Advanced**: HMAC Signature required for write routes (X-Timestamp, X-Nonce, X-Signature)
+This API is designed for high-scale applications requiring low latency and robust security. It is fully integrated with RapidAPI for seamless billing and key management.
 
-## Rate Limit Model
-- **Model**: Token Bucket (per API Key and per IP)
-- **Free Plan**: 60 req/min, 5000/day
-- **Pro Plan**: 300 req/min, 100,000/day
-- **Headers**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+## Key Features
+- **Global Low Latency**: Deployed on Cloudflare's global edge network.
+- **Enterprise Security**: Built-in SSRF protection and strict input validation.
+- **Developer First**: Structured JSON responses and clear error codes.
+- **RapidAPI Ready**: No custom auth logic required; simply use your RapidAPI Key.
 
-## Required Cloudflare Bindings
-- **KV**: Used for API key metadata, rate limiting, and asset storage.
+## Authentication
+This API is exclusively available via **RapidAPI**. 
+1. Subscribe to a plan on the RapidAPI Marketplace.
+2. Include the following headers in your requests:
+   - `X-RapidAPI-Key`: Your unique RapidAPI Subscription Key.
+   - `X-RapidAPI-Host`: The host assigned by RapidAPI.
 
-## Local Setup
-```bash
-npm install
-cp .env.example .env
-npm run dev
+## API Endpoints
+- GET /v1/status?url=\n- GET /v1/history?url=\n- POST /v1/check
+
+## Implementation Details
+- **Technology**: TypeScript / Hono / Cloudflare Workers
+- **Database**: Cloudflare D1 (SQL) for usage tracking
+- **Response Format**: JSON
+- **Rate Limits**: Managed by your RapidAPI plan (Basic, Pro, Ultra)
+
+## Standard Response Shape
+```json
+{
+  "ok": true,
+  "data": { ... },
+  "request_id": "req_..."
+}
 ```
 
-## Test Commands
-```bash
-npm test        # Run Vitest
-npm run lint    # Run ESLint
-npm run typecheck # Run TSC
-```
-
-## Deploy Steps
-```bash
-# 1. Create KV/R2 namespaces in Cloudflare
-# 2. Update wrangler.jsonc with namespace IDs
-# 3. Add secrets
-wrangler secret put API_KEY_SECRET
-# 4. Deploy
-npm run deploy
-```
-
-## Security Notes
-- **SSRF Guard**: Strict blocking of private/local IP ranges on all URL-fetching routes.
-- **Request IDs**: `X-Request-Id` included in every response for tracing.
-- **Strict Validation**: Zod-based input validation for all queries and bodies.
-- **Redaction**: Automatic redaction of PII and secrets in logs.
-
-## Example Request
-```bash
-curl -X GET "http://localhost:8787/v1/checks/:id" \
-     -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-## Response Shape
-- **Success**: `{ ok: true, data: {...}, meta: {...}, request_id: "..." }`
-- **Error**: `{ ok: false, error: { code: "...", message: "..." }, request_id: "..." }`
-
-## Infrastructure Setup
-
-Run these commands to initialize the required Cloudflare resources:
-
-```bash
-# 1. Create KV Namespace (Note the ID from the output)
-wrangler kv:namespace create "KV"
-
-# 3. Set Secrets
-wrangler secret put API_KEY_SECRET
-wrangler secret put HMAC_SECRET
-```
-
-> **Note:** After creating KV/R2, update the `id` fields in `wrangler.jsonc` with the IDs provided by the command output.
-
+---
+*Maintained by rishabh-yadav11. For custom enterprise deployments, contact us.*
